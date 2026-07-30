@@ -1,0 +1,25 @@
+# Normalise to LF in the repository; check out native on Windows.
+* text=auto
+
+*.py   text diff=python
+*.md   text
+*.toml text
+*.txt  text
+*.html text diff=html
+*.css  text diff=css
+*.js   text
+*.yml  text
+*.env  text
+
+# Keep Docker/shell scripts LF so they work inside Linux images.
+Dockerfile   text eol=lf
+*.sh         text eol=lf
+
+# Binaries
+*.pt    binary
+*.onnx  binary
+*.jpg   binary
+*.jpeg  binary
+*.png   binary
+*.webp  binary
+*.bmp   binary

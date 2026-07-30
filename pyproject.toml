@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "platevision"
+version = "2.0.0"
+description = "Indian number plate detection (YOLO) and recognition (PaddleOCR) behind a FastAPI service"
+
+# Vercel reads this as one of three Python-version sources and supports only
+# 3.12 / 3.13 / 3.14, so ">=3.10" resolves there to 3.12 -- which is also what
+# `.python-version` pins, deliberately. Keep the floor at 3.10 so local
+# development on 3.10 still works; do not raise it without checking what the
+# contributors are running.
+requires-python = ">=3.10"
+readme = "README.md"
+
+dependencies = [
+  "fastapi==0.116.1",
+  "uvicorn[standard]==0.35.0",
+  "python-multipart==0.0.20",
+  "pydantic==2.11.7",
+  "pydantic-settings==2.10.1",
+
+  "ultralytics==8.3.168",
+  "torch==2.7.1",
+  "torchvision==0.22.1",
+
+  # Both OCR backends; OCR_ENGINE picks one at runtime. paddleocr is the
+  # default -- see app/ocr.py for the benchmark. Either can be dropped if
+  # OCR_ENGINE is pinned to the other.
+  "paddleocr==3.1.0",
+  "paddlepaddle==3.1.0",
+  "easyocr==1.7.2",
+
+  # Headless build only. The service never calls cv2.imshow, and the GUI build
+  # pulls X11/Qt libraries that are absent from slim container images.
+  "opencv-python-headless==4.12.0.88",
+  "numpy==2.2.6",
+  "pillow==11.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.1",
+  "pytest-asyncio==1.1.0",
+  "httpx==0.28.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+  "slow: exercises the real model weights; skipped when they are absent",
+]
+
+[tool.ruff]
+line-length = 96
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]

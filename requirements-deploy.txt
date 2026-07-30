@@ -1,0 +1,36 @@
+# Linux deployment pins. Use this INSTEAD of requirements.txt on a host.
+#
+#     pip install -r requirements-deploy.txt
+#
+# Why it exists: on Linux, `pip install torch` from PyPI pulls the CUDA build,
+# which is ~2 GB of GPU libraries this project never uses. That alone fails the
+# build on most platforms. The index below serves CPU-only wheels (~200 MB),
+# and the "+cpu" pin makes pip take them from there rather than PyPI.
+#
+# EasyOCR is omitted: PaddleOCR is the default engine and dropping the spare
+# saves ~109 MB. Add `easyocr==1.7.2` back if you want OCR_ENGINE=easyocr
+# available as a fallback.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Web
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-multipart==0.0.20
+pydantic==2.11.7
+pydantic-settings==2.10.1
+
+# Detection. CPU-only torch: ~200 MB instead of ~2 GB.
+ultralytics==8.3.168
+torch==2.7.1+cpu
+torchvision==0.22.1+cpu
+
+# OCR. The PyPI `paddlepaddle` package is already the CPU build
+# (`paddlepaddle-gpu` is the CUDA one).
+paddleocr==3.1.0
+paddlepaddle==3.1.0
+
+# Imaging. Headless only -- no X11/Qt in a server image.
+opencv-python-headless==4.12.0.88
+numpy==2.2.6
+pillow==11.3.0

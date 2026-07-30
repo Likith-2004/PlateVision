@@ -1,0 +1,58 @@
+# Byte-compiled / caches
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+inpd/
+venv/
+.venv/
+ENV/
+env/
+
+# Model weights are large binaries; distribute via a release asset and fetch
+# them at build time with scripts/fetch_model.py. See DEPLOYMENT.md.
+model/*.pt
+model/*.onnx
+
+# PaddleOCR weights, downloaded into the deployment bundle at build time by
+# scripts/warm_paddle.py. Build output, not source.
+.paddlex/
+
+# Runtime artifacts. Note: no global *.jpg rule here -- the previous one
+# silently excluded the test fixtures in tests/samples/.
+data/
+
+# Frontend toolchain
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# NOTE: app/web/ is generated (Vite build output) but IS committed on purpose,
+# so `uvicorn app.main:app` serves a working UI on a fresh clone without
+# requiring Node. Regenerate with: npm --prefix frontend run build
+# Do not hand-edit it; edit frontend/src instead.
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

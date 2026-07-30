@@ -1,0 +1,30 @@
+# Runtime dependencies. Mirrors [project.dependencies] in pyproject.toml for
+# hosts that only understand `pip install -r requirements.txt`.
+# Dev/test extras: pip install -e ".[dev]"
+
+# Web
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-multipart==0.0.20
+pydantic==2.11.7
+pydantic-settings==2.10.1
+
+# Detection
+ultralytics==8.3.168
+torch==2.7.1
+torchvision==0.22.1
+
+# OCR. Both backends ship by default; OCR_ENGINE selects one at runtime.
+# paddleocr is the default (see app/ocr.py for the benchmark behind that).
+# Dropping either engine is safe if you pin OCR_ENGINE to the other:
+#   paddleocr+paddlepaddle ~= 380MB installed, +231MB of downloaded models
+#   easyocr                ~=  15MB installed, + 94MB of downloaded models
+paddleocr==3.1.0
+paddlepaddle==3.1.0
+easyocr==1.7.2
+
+# Imaging. Headless only: the service never calls cv2.imshow, and the GUI build
+# drags in X11/Qt libraries that slim container images do not ship.
+opencv-python-headless==4.12.0.88
+numpy==2.2.6
+pillow==11.3.0
