@@ -77,18 +77,37 @@ weights.
 
 ## Environment variables
 
-Set these in **Vercel → Project → Settings → Environment Variables**, for every
-environment (Production, Preview, Development):
+There are two kinds, and they are supplied differently.
+
+**Build-time** — read by `scripts/fetch_model.py` while the bundle is built.
+These are baked into the `api` service's `buildCommand` in `vercel.json`, so they
+live in version control and need no dashboard entry:
 
 | Variable | Value | Why |
 |---|---|---|
 | `MODEL_URL` | the release-asset URL above | Where `fetch_model.py` downloads the weights |
 | `MODEL_SHA256` | the `sha256sum` of `best.pt` | Verifies the download; strongly recommended |
+
+**Runtime** — read by the app ([app/config.py](app/config.py)) when a request is
+served, so a build-command prefix never reaches them. Set these in **Vercel →
+Project → Settings → Environment Variables**, scoped to **Production** (and
+Preview if you deploy preview branches):
+
+| Variable | Value | Why |
+|---|---|---|
 | `API_PREFIX` | `/api` | Routes must live under `/api` — see below |
 | `INLINE_IMAGES` | `true` | The serverless filesystem is ephemeral — see below |
+| `PADDLE_MODEL_DIR` | `.paddlex` | Where `warm_paddle.py` baked the OCR weights — see below |
+| `PADDLE_CACHE_DIR` | `/tmp/paddlex` | Writable cache seeded from the baked copy — see below |
 
-The full annotated list of application settings is in
-[.env.example](.env.example); only the four above are deployment-specific.
+All four runtime settings default to off/unset, which is correct for a local
+run; each is only turned on for the deployment. The full annotated list of
+application settings is in [.env.example](.env.example).
+
+> **Scope matters.** A push to `main` is a **Production** deploy, so a variable
+> saved only for Preview (or not saved at all) is invisible to it — the build or
+> the running app then behaves as if it were unset. If something reads as
+> "missing" despite being entered, check the environment checkboxes first.
 
 ### Why `API_PREFIX=/api`
 
@@ -108,6 +127,18 @@ instance that never wrote the file — an image that works most of the time, whi
 is worse than one that never does. `INLINE_IMAGES=true` returns the image inline
 as a data URI in the JSON response instead, at ~33% base64 overhead on a
 response normally well under 1 MB.
+
+### Why `PADDLE_MODEL_DIR` and `PADDLE_CACHE_DIR`
+
+`scripts/warm_paddle.py` bakes the OCR weights into `.paddlex` at build time, but
+baking them in is only half the job — the app has to be told to use them, or it
+falls back to PaddleOCR's default of downloading into `~/.paddlex` on first use.
+On a serverless host `$HOME` is read-only, so that download fails and OCR never
+loads. `PADDLE_MODEL_DIR=.paddlex` points the app at the baked copy, and
+`PADDLE_CACHE_DIR=/tmp/paddlex` gives it a writable location to seed from that
+copy once per process (`/tmp` is the writable path on Vercel). Set neither and
+the warm-up work is wasted; set only the model dir and there is nowhere writable
+to seed into. See [app/ocr.py](app/ocr.py) `_prepare_cache`.
 
 ---
 
@@ -170,7 +201,7 @@ curl -F "image=@car.jpg" https://<your-deployment>/api/detect
 | Constraint | Consequence | Handled by |
 |---|---|---|
 | Weights are gitignored | Nothing to load on a clean clone | `scripts/fetch_model.py` + `MODEL_URL` |
-| PaddleOCR fetches weights on first use | Read-only `$HOME`; re-download per cold start | `scripts/warm_paddle.py` bakes in ~22 MB |
+| PaddleOCR fetches weights on first use | Read-only `$HOME`; re-download per cold start | `scripts/warm_paddle.py` bakes in ~22 MB; `PADDLE_MODEL_DIR` / `PADDLE_CACHE_DIR` wire it up at runtime |
 | Filesystem is ephemeral and per-instance | `/media/<id>.jpg` 404s intermittently | `INLINE_IMAGES=true` → data URI |
 | Request body capped at 4.5 MB | Phone photos rejected at the edge | `frontend/src/image.ts` resizes before upload |
 | Torch defaults to the CUDA build | ~2 GB, exceeds sane limits | `requirements-deploy.txt` pins `+cpu` |
