@@ -14,12 +14,14 @@ Run it as the deploy build command:
 It is a no-op when the file already exists, so local development and repeated
 builds never touch the network. Configure it with:
 
-    MODEL_URL      direct download URL for best.pt (required when absent)
-    MODEL_SHA256   expected checksum; strongly recommended
+    MODEL_URL      direct download URL for best.pt (optional)
+    MODEL_SHA256   expected checksum; strongly recommended when MODEL_URL is set
     MODEL_PATH     destination (default: model/best.pt)
 
-Exits non-zero on any failure so a bad download fails the build loudly rather
-than shipping a broken deployment.
+If the weights are absent and MODEL_URL is not set, the step is skipped (exit 0)
+so the build still succeeds -- the app starts and reports the missing model via
+/health. When MODEL_URL *is* set, a bad download still fails the build loudly
+rather than shipping broken weights.
 """
 
 from __future__ import annotations
@@ -72,11 +74,18 @@ def main() -> None:
 
     url = (os.environ.get('MODEL_URL') or '').strip()
     if not url:
-        fail(
-            f'{target} is missing and MODEL_URL is not set.\n'
-            'Publish model/best.pt as a downloadable asset and set MODEL_URL to '
-            'its direct URL. See DEPLOYMENT.md > "Ship the weights".'
+        # No weights present and no download configured. This is not a build
+        # failure by choice: the app starts without the model and reports it
+        # through /health, so a deploy can go live (frontend + API) and have
+        # the detector added later -- by committing model/best.pt, using Git
+        # LFS, or setting MODEL_URL. Exit 0 so the build proceeds.
+        print(
+            f'fetch_model: {target} is missing and MODEL_URL is not set; '
+            'skipping download. Detection will be unavailable until weights '
+            'are provided (/health will report model_loaded=false).',
+            file=sys.stderr,
         )
+        return
 
     target.parent.mkdir(parents=True, exist_ok=True)
     # Download to a staging name and rename, so an interrupted build cannot

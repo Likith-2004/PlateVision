@@ -20,18 +20,29 @@ invokes the Python function. This guide is the step-by-step; the README's
 
 ---
 
-## Ship the weights
+## Ship the weights (optional)
 
 `model/best.pt` (~52 MB) is gitignored — large binaries bloat git history
 permanently — so a clean clone, which is exactly what a Vercel build starts
 from, has no weights. [`scripts/fetch_model.py`](scripts/fetch_model.py) runs at
-build time and downloads them from `MODEL_URL`. Without that variable set the
-build fails loudly (by design) rather than shipping a function that imports fine
-and then reports the missing model through `/health` forever.
+build time; if `MODEL_URL` is set it downloads the weights, and if it isn't the
+step is **skipped so the build still succeeds**. A deploy with no weights comes
+up fine — the frontend and API work — and `/health` simply reports
+`model_loaded: false` until weights are provided. Detection endpoints need the
+model, so add it before relying on `/detect`.
 
-So the weights must live at a **direct-download URL** — one that returns the raw
-file, not an HTML page. A GitHub Release asset is the simplest option and needs
-no extra service.
+You have three ways to get the weights onto the deployment; pick one:
+
+- **`MODEL_URL`** — host `best.pt` at a **direct-download URL** (one that returns
+  the raw file, not an HTML page; a GitHub Release asset is simplest) and set
+  `MODEL_URL` so the build fetches it. Steps below.
+- **Commit the file** — drop the gitignore entry for `model/best.pt` and commit
+  it. Simplest, but bloats the repo permanently.
+- **Git LFS** — track `model/best.pt` with LFS to keep the file out of normal
+  history.
+
+The rest of this section covers the `MODEL_URL` route. Skip it entirely if you
+are deploying without the model for now.
 
 **1. Publish `model/best.pt` as a release asset.**
 
@@ -79,13 +90,14 @@ weights.
 
 There are two kinds, and they are supplied differently.
 
-**Build-time** — read by `scripts/fetch_model.py` while the bundle is built.
-These are baked into the `api` service's `buildCommand` in `vercel.json`, so they
-live in version control and need no dashboard entry:
+**Build-time (optional)** — read by `scripts/fetch_model.py` while the bundle is
+built. Set these **only if** you are using the `MODEL_URL` route from *Ship the
+weights* above; leave them unset to deploy without the model. Set them either in
+the dashboard or by prefixing them in the `api` `buildCommand` in `vercel.json`:
 
 | Variable | Value | Why |
 |---|---|---|
-| `MODEL_URL` | the release-asset URL above | Where `fetch_model.py` downloads the weights |
+| `MODEL_URL` | the release-asset URL | Where `fetch_model.py` downloads the weights |
 | `MODEL_SHA256` | the `sha256sum` of `best.pt` | Verifies the download; strongly recommended |
 
 **Runtime** — read by the app ([app/config.py](app/config.py)) when a request is
@@ -200,7 +212,7 @@ curl -F "image=@car.jpg" https://<your-deployment>/api/detect
 
 | Constraint | Consequence | Handled by |
 |---|---|---|
-| Weights are gitignored | Nothing to load on a clean clone | `scripts/fetch_model.py` + `MODEL_URL` |
+| Weights are gitignored | Nothing to load on a clean clone | `scripts/fetch_model.py` fetches from `MODEL_URL` if set, else skips (deploy runs without the model) |
 | PaddleOCR fetches weights on first use | Read-only `$HOME`; re-download per cold start | `scripts/warm_paddle.py` bakes in ~22 MB; `PADDLE_MODEL_DIR` / `PADDLE_CACHE_DIR` wire it up at runtime |
 | Filesystem is ephemeral and per-instance | `/media/<id>.jpg` 404s intermittently | `INLINE_IMAGES=true` → data URI |
 | Request body capped at 4.5 MB | Phone photos rejected at the edge | `frontend/src/image.ts` resizes before upload |

@@ -16,9 +16,10 @@ venv/
 ENV/
 env/
 
-# Model weights are large binaries; distribute via a release asset and fetch
-# them at build time with scripts/fetch_model.py. See DEPLOYMENT.md.
-model/*.pt
+# The YOLO weights (model/best.pt, ~50 MB) are committed on purpose so a fresh
+# clone and the Vercel function bundle have the model without any fetch step.
+# GitHub allows this (under its 100 MB limit) and it is not routed to Git LFS.
+# Other large model exports stay out of git.
 model/*.onnx
 
 # PaddleOCR weights, downloaded into the deployment bundle at build time by
