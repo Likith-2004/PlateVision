@@ -21,6 +21,9 @@ torchvision==0.22.1
 #   easyocr                ~=  15MB installed, + 94MB of downloaded models
 paddleocr==3.1.0
 paddlepaddle==3.1.0
+# Pin paddlex: paddleocr 3.1.0 only requires paddlex>=3.1.0, and newer paddlex
+# (3.7.x) breaks its PaddlePredictorOption API. 3.1.3 is verified to work.
+paddlex==3.1.3
 easyocr==1.7.2
 
 # Imaging. Headless only: the service never calls cv2.imshow, and the GUI build
