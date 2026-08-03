@@ -14,7 +14,7 @@
       "runtime": "python",
       "entrypoint": "app.main:app",
       "installCommand": "pip install -r requirements-deploy.txt",
-      "buildCommand": "python scripts/fetch_model.py && python scripts/warm_paddle.py",
+      "buildCommand": "MODEL_URL=https://github.com/Likith-2004/PlateVision/releases/download/weights-v1/best.pt MODEL_SHA256=669747c0f8949be65461618b7b6d01260fc39682030930cd9c870f0f07b28648 python scripts/fetch_model.py && python scripts/warm_paddle.py",
       "functions": {
         "app/main.py": {
           "maxDuration": 300,
