@@ -27,8 +27,15 @@ torchvision==0.22.1+cpu
 
 # OCR. The PyPI `paddlepaddle` package is already the CPU build
 # (`paddlepaddle-gpu` is the CUDA one).
+#
+# paddlex MUST be pinned: paddleocr 3.1.0 only declares `paddlex>=3.1.0`, so an
+# unpinned install pulls the newest paddlex (e.g. 3.7.2), whose changed
+# PaddlePredictorOption API breaks paddleocr 3.1.0 at construction with
+# "PaddlePredictorOption.__init__() takes 1 positional argument but 2 were
+# given". 3.1.3 is the version this project is verified against.
 paddleocr==3.1.0
 paddlepaddle==3.1.0
+paddlex==3.1.3
 
 # Imaging. Headless only -- no X11/Qt in a server image.
 opencv-python-headless==4.12.0.88
